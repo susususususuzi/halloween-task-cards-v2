@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>萬聖節任務抽卡 v4 Final</title>
+  <style>
+    :root{
+      --card-w: 260px;
+      --card-h: 378px;
+      --preview-w: 320px;
+      --preview-h: 465px;
+      --hand-w: 154px;
+      --hand-h: 224px;
+
+      --text:#2b2140;
+      --panel-bg: rgba(18,18,24,.72);
+      --panel-line: rgba(255,255,255,.12);
+      --btn-line: rgba(255,255,255,.14);
+      --shadow: 0 18px 44px rgba(0,0,0,.34);
+
+      --stage-bg: #08080d;
+      --stage-overlay: radial-gradient(circle at center, rgba(255,255,255,.02), rgba(0,0,0,0) 60%);
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+      user-select:none;
+    }
+
+    body{
+      background:var(--stage-bg);
+      color:#fff;
+    }
+
+    body.obs-mode{
+      background:transparent;
+    }
+
+    .stage{
+      position:relative;
+      width:100vw;
+      height:100vh;
+      overflow:hidden;
+      background:var(--stage-bg);
+    }
+
+    body.obs-mode .stage{
+      background:transparent;
+    }
+
+    .stage::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:var(--stage-overlay);
+      pointer-events:none;
+    }
+
+    .orb{
+      position:absolute;
+      border-radius:50%;
+      filter:blur(48px);
+      pointer-events:none;
+      opacity:.32;
+      animation:floaty 10s ease-in-out infinite;
+    }
+
+    body.obs-mode .orb{
+      opacity:.20;
+    }
+
+    .orb.a{ width:320px;height:320px; left:6%; top:10%; background:radial-gradient(circle,#ff8fc4,transparent 70%); }
+    .orb.b{ width:290px;height:290px; right:12%; top:10%; background:radial-gradient(circle,#9d8cff,transparent 70%); animation-duration:12s; }
+    .orb.c{ width:260px;height:260px; left:18%; bottom:10%; background:radial-gradient(circle,#9af6e1,transparent 70%); animation-duration:11s; }
+    .orb.d{ width:220px;height:220px; right:14%; bottom:15%; background:radial-gradient(circle,#ffd97e,transparent 70%); animation-duration:13s; }
+
+    @keyframes floaty{
+      0%,100%{ transform:translate(0,0); }
+      50%{ transform:translate(12px,-15px); }
+    }
+
+    .topbar{
+      position:absolute;
+      top:18px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:30;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      width:min(95vw,1100px);
+    }
+
+    .btn{
+      appearance:none;
+      border:none;
+      outline:none;
+      cursor:pointer;
+      color:#fff;
+      font-weight:900;
+      font-size:15px;
+      padding:12px 18px;
+      border-radius:999px;
+      backdrop-filter:blur(10px);
+      border:1px solid var(--btn-line);
+      box-shadow:0 12px 26px rgba(0,0,0,.24);
+      transition:.22s ease;
+      letter-spacing:.4px;
+      background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.08));
+    }
+
+    .btn:hover{ transform:translateY(-2px) scale(1.03); }
+    .btn:active{ transform:translateY(1px) scale(.98); }
+
+    .left-panel{
+      position:absolute;
+      left:24px;
+      top:138px;
+      width:255px;
+      z-index:20;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .glass-panel{
+      background:var(--panel-bg);
+      border:1px solid var(--panel-line);
+      backdrop-filter:blur(12px);
+      border-radius:20px;
+      box-shadow:0 12px 28px rgba(0,0,0,.24);
+      color:#fff;
+      padding:14px;
+    }
+
+    .panel-title{
+      font-size:14px;
+      font-weight:900;
+      margin-bottom:10px;
+      opacity:.96;
+      letter-spacing:.5px;
+    }
+
+    .count-list{
+      display:grid;
+      gap:8px;
+    }
+
+    .count-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .history-list{
+      max-height:260px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding-right:4px;
+    }
+
+    .history-item{
+      font-size:12px;
+      line-height:1.45;
+      padding:8px 10px;
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+    }
+
+    .deck-zone{
+      position:absolute;
+      right:90px;
+      top:50%;
+      transform:translateY(-50%);
+      width:260px;
+      height:360px;
+      z-index:12;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .deck-stack{
+      position:relative;
+      width:220px;
+      height:320px;
+      cursor:pointer;
+      transition:.25s ease;
+    }
+
+    .deck-stack:hover{
+      transform:translateY(-6px) scale(1.02);
+    }
+
+    .deck-back{
+      position:absolute;
+      inset:0;
+      border-radius:26px;
+      overflow:hidden;
+      border:2px solid rgba(255,255,255,.34);
+      box-shadow:var(--shadow);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04)),
+        linear-gradient(145deg, #ff78b0, #8967ff, #48ccb0, #ffbd48);
+    }
+
+    .deck-back::before{
+      content:"";
+      position:absolute;
+      inset:14px;
+      border-radius:18px;
+      border:2px dashed rgba(255,255,255,.20);
+    }
+
+    .deck-back::after{
+      content:"✦";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:116px;
+      height:116px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:44px;
+      color:rgba(255,255,255,.92);
+      border:3px solid rgba(255,255,255,.22);
+      box-shadow:0 0 0 12px rgba(255,255,255,.05);
+    }
+
+    .deck-l1{ transform:rotate(-7deg) translate(-8px,8px); opacity:.75; }
+    .deck-l2{ transform:rotate(6deg) translate(8px,-6px); opacity:.88; }
+
+    .deck-main{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#fff;
+      text-shadow:0 2px 8px rgba(0,0,0,.25);
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:2px;
+    }
+
+    .deck-label{
+      position:absolute;
+      bottom:-40px;
+      width:100%;
+      text-align:center;
+      color:rgba(255,255,255,.96);
+      font-weight:900;
+      text-shadow:0 4px 12px rgba(0,0,0,.35);
+    }
+
+    .deck-preview{
+      position:absolute;
+      right:170px;
+      top:50%;
+      width:190px;
+      height:276px;
+      transform:translateY(-50%) translateX(20px) scale(.92);
+      opacity:0;
+      pointer-events:none;
+      transition:all .22s ease;
+      z-index:14;
+      filter:drop-shadow(0 18px 36px rgba(0,0,0,.30));
+    }
+
+    .deck-zone:hover .deck-preview{
+      opacity:1;
+      transform:translateY(-50%) translateX(-8px) scale(1.02) rotate(-4deg);
+    }
+
+    .focus-dim{
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,.36);
+      opacity:0;
+      transition:opacity .25s ease;
+      pointer-events:none;
+      z-index:16;
+    }
+
+    .focus-dim.show{
+      opacity:1;
+    }
+
+    body.obs-mode .focus-dim{
+      background:rgba(0,0,0,.18);
+    }
+
+    .center-layer{
+      position:absolute;
+      inset:0;
+      z-index:18;
+      pointer-events:none;
+    }
+
+    .card-wrap{
+      position:absolute;
+      width:var(--card-w);
+      height:var(--card-h);
+      transform-style:preserve-3d;
+      perspective:1200px;
+      pointer-events:auto;
+      opacity:1;
+    }
+
+    .card-face{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      border-radius:24px;
+      backface-visibility:hidden;
+      overflow:hidden;
+      border:2px solid rgba(255,255,255,.72);
+      box-shadow:var(--shadow);
+      opacity:1;
+      visibility:visible;
+    }
+
+    .card-back{
+      transform:rotateY(0deg);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.05)),
+        linear-gradient(145deg, #ff78b0, #8967ff, #48ccb0, #ffbd48);
+    }
+
+    .card-back::before{
+      content:"";
+      position:absolute;
+      inset:14px;
+      border-radius:18px;
+      border:2px dashed rgba(255,255,255,.20);
+    }
+
+    .card-back::after{
+      content:"♡ ✦ ♡";
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      color:rgba(255,255,255,.92);
+      font-size:32px;
+      font-weight:900;
+      letter-spacing:8px;
+      text-shadow:0 2px 8px rgba(0,0,0,.18);
+    }
+
+    .card-front{
+      transform:rotateY(180deg);
+      background:linear-gradient(180deg, rgba(255,255,255,1), rgba(249,244,255,1));
+      color:var(--text);
+    }
+
+    .card-front::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 18% 15%, rgba(255,255,255,.9), transparent 16%),
+        radial-gradient(circle at 78% 12%, rgba(255,255,255,.55), transparent 16%),
+        radial-gradient(circle at 50% 120%, rgba(255,180,215,.22), transparent 40%);
+      pointer-events:none;
+    }
+
+    .cat-normal .badge{ background:linear-gradient(135deg,#ff7cab,#ffa5c8); }
+    .cat-advanced .badge{ background:linear-gradient(135deg,#7860ff,#ab98ff); }
+    .cat-hidden .badge{ background:linear-gradient(135deg,#48ccb0,#8cf0e1); }
+    .cat-host .badge{ background:linear-gradient(135deg,#ffbd48,#ff9253); }
+
+    .card-inner{
+      position:absolute;
+      inset:0;
+      z-index:1;
+    }
+
+    .header{
+      padding:16px 16px 8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      color:#fff;
+      font-size:12px;
+      font-weight:900;
+      border-radius:999px;
+      box-shadow:0 6px 14px rgba(0,0,0,.12);
+    }
+
+    .icon{
+      font-size:28px;
+      filter:drop-shadow(0 4px 6px rgba(0,0,0,.08));
+    }
+
+    .content{
+      padding:0 18px 18px;
+      display:flex;
+      flex-direction:column;
+      height:calc(100% - 64px);
+    }
+
+    .title{
+      font-size:30px;
+      font-weight:900;
+      line-height:1.2;
+      margin:8px 0 12px;
+      color:#33244e;
+    }
+
+    .desc{
+      font-size:17px;
+      line-height:1.7;
+      color:#55476d;
+      flex:1;
+    }
+
+    .effect{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:16px;
+      font-size:14px;
+      line-height:1.6;
+      background:rgba(255,255,255,.82);
+      border:1px solid rgba(120,80,160,.10);
+      color:#554270;
+      font-weight:700;
+    }
+
+    .stars{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+    }
+
+    .stars span{
+      position:absolute;
+      animation:twinkle 2.8s ease-in-out infinite;
+      opacity:.45;
+    }
+
+    @keyframes twinkle{
+      0%,100%{ opacity:.2; transform:scale(.9); }
+      50%{ opacity:.88; transform:scale(1.12); }
+    }
+
+    .flip-inner{
+      position:relative;
+      width:100%;
+      height:100%;
+      transform-style:preserve-3d;
+      transition:transform .7s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .flipped .flip-inner{
+      transform:rotateY(180deg);
+    }
+
+    .hand-zone{
+      position:absolute;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      width:min(92vw,1400px);
+      height:240px;
+      z-index:12;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      pointer-events:none;
+    }
+
+    .hand-card{
+      position:relative;
+      width:var(--hand-w);
+      height:var(--hand-h);
+      margin-left:-30px;
+      border-radius:20px;
+      transform-origin:center bottom;
+      pointer-events:auto;
+      cursor:pointer;
+      transition:transform .25s ease, box-shadow .25s ease, filter .25s ease;
+    }
+
+    .hand-card:first-child{ margin-left:0; }
+
+    .hand-card:hover{
+      transform:translateY(-18px) scale(1.08) !important;
+      z-index:999 !important;
+      box-shadow:0 22px 46px rgba(0,0,0,.35);
+      filter:brightness(1.03);
+    }
+
+    .hand-card .title{ font-size:18px; margin:6px 0 8px; }
+    .hand-card .desc{ font-size:11px; line-height:1.45; }
+    .hand-card .effect{ font-size:10px; padding:8px 10px; margin-top:8px; }
+    .hand-card .badge{ font-size:10px; padding:5px 8px; }
+    .hand-card .icon{ font-size:22px; }
+    .hand-card .header{ padding:12px 12px 4px; }
+    .hand-card .content{ padding:0 12px 12px; height:calc(100% - 50px); }
+
+    .multi-burst-card{
+      width:240px;
+      height:348px;
+      left:50%;
+      top:50%;
+      opacity:0;
+      transform:translate(-50%,-50%) scale(.18) rotate(0deg);
+    }
+
+    .multi-burst-card.fly{
+      animation:burstToCenter .65s cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    @keyframes burstToCenter{
+      0%{
+        right:110px;
+        left:auto;
+        top:50%;
+        transform:translateY(-50%) scale(.18) rotate(-18deg);
+        opacity:0;
+      }
+      20%{ opacity:1; }
+      100%{
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%) scale(1) rotate(var(--rot));
+        opacity:1;
+      }
+    }
+
+    .multi-burst-card.to-hand{
+      animation:burstToHand .58s cubic-bezier(.22,.8,.22,1) forwards;
+    }
+
+    @keyframes burstToHand{
+      0%{
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%) scale(1) rotate(var(--rot));
+        opacity:1;
+      }
+      100%{
+        left:50%;
+        top:83%;
+        transform:translate(-50%,-50%) scale(.58) rotate(0deg);
+        opacity:0;
+      }
+    }
+
+    .active-card{
+      position:absolute;
+      left:50%;
+      top:79%;
+      width:var(--preview-w);
+      height:var(--preview-h);
+      transform:translate(-50%,-50%) scale(.68) rotate(0deg);
+      z-index:25;
+      pointer-events:auto;
+      cursor:pointer;
+      opacity:1;
+    }
+
+    .active-card.launch{
+      animation:useCardQuick 0.78s cubic-bezier(.22,.8,.2,1) forwards;
+    }
+
+    @keyframes useCardQuick{
+      0%{
+        left:50%;
+        top:79%;
+        transform:translate(-50%,-50%) scale(.68) rotate(0deg);
+        opacity:1;
+      }
+      40%{
+        left:50%;
+        top:46%;
+        transform:translate(-50%,-50%) scale(1.02) rotate(420deg);
+      }
+      75%{
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%) scale(1.08) rotate(700deg);
+      }
+      100%{
+        left:50%;
+        top:50%;
+        transform:translate(-50%,-50%) scale(1.04) rotate(720deg);
+        opacity:1;
+      }
+    }
+
+    .active-card.displaying{
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) scale(1.04) rotate(720deg);
+      opacity:1;
+      box-shadow:
+        0 0 18px rgba(255,255,255,.55),
+        0 0 34px rgba(255,216,120,.22),
+        0 20px 52px rgba(0,0,0,.34);
+    }
+
+    .active-card.fade-out{
+      animation:vanishCenter .42s ease forwards;
+    }
+
+    @keyframes vanishCenter{
+      0%{
+        opacity:1;
+        transform:translate(-50%,-50%) scale(1.04) rotate(720deg);
+      }
+      100%{
+        opacity:0;
+        transform:translate(-50%,-50%) scale(1.18) rotate(760deg);
+      }
+    }
+
+    .star-burst{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:16px;
+      height:16px;
+      pointer-events:none;
+      z-index:70;
+    }
+
+    .star-burst span{
+      position:absolute;
+      left:0;
+      top:0;
+      font-size:18px;
+      color:#fff3a6;
+      text-shadow:
+        0 0 8px rgba(255,240,160,.9),
+        0 0 18px rgba(255,220,120,.65);
+      opacity:0;
+      animation:starBurstAnim .55s ease-out forwards;
+    }
+
+    @keyframes starBurstAnim{
+      0%{ opacity:0; transform:translate(0,0) scale(.2) rotate(0deg); }
+      18%{ opacity:1; transform:translate(0,0) scale(1) rotate(30deg); }
+      100%{ opacity:0; transform:translate(var(--dx), var(--dy)) scale(.45) rotate(120deg); }
+    }
+
+    .trail-spark{
+      position:absolute;
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      pointer-events:none;
+      z-index:68;
+      background: radial-gradient(circle, #fff, #ffe08f 55%, transparent 72%);
+      animation: trailSparkAnim .55s ease-out forwards;
+    }
+
+    @keyframes trailSparkAnim{
+      0%{ opacity:1; transform:translate(0,0) scale(1); }
+      100%{ opacity:0; transform:translate(var(--dx), var(--dy)) scale(.25); }
+    }
+
+    .toast{
+      position:absolute;
+      left:50%;
+      top:124px;
+      transform:translateX(-50%);
+      z-index:50;
+      color:#fff;
+      background:rgba(16,16,22,.78);
+      border:1px solid rgba(255,255,255,.15);
+      backdrop-filter:blur(10px);
+      border-radius:999px;
+      padding:10px 16px;
+      font-size:13px;
+      font-weight:800;
+      box-shadow:0 10px 24px rgba(0,0,0,.26);
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .toast.show{
+      animation:toastInOut 2.2s ease forwards;
+    }
+
+    @keyframes toastInOut{
+      0%{ opacity:0; transform:translateX(-50%) translateY(-6px); }
+      12%,78%{ opacity:1; transform:translateX(-50%) translateY(0); }
+      100%{ opacity:0; transform:translateX(-50%) translateY(-6px); }
+    }
+
+    @media (max-width: 1280px){
+      :root{
+        --preview-w: 290px;
+        --preview-h: 420px;
+        --hand-w: 138px;
+        --hand-h: 200px;
+      }
+      .left-panel{ width:220px; }
+      .deck-zone{ right:40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="orb a"></div>
+    <div class="orb b"></div>
+    <div class="orb c"></div>
+    <div class="orb d"></div>
+
+    <div class="topbar">
+      <button class="btn" id="clearHandBtn">清空手牌</button>
+      <button class="btn" id="resetAllBtn">重置牌庫</button>
+    </div>
+
+    <div class="left-panel">
+      <div class="glass-panel">
+        <div class="panel-title">牌庫剩餘數量</div>
+        <div class="count-list" id="countList"></div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">抽卡歷史</div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+
+    <div class="deck-zone" id="deckZone">
+      <div class="deck-stack">
+        <div class="deck-back deck-l1"></div>
+        <div class="deck-back deck-l2"></div>
+        <div class="deck-back deck-main">DRAW<br>5</div>
+        <div class="deck-label">點擊牌庫一次抽五張</div>
+      </div>
+
+      <div class="deck-preview" id="deckPreview">
+        <div class="flip-inner flipped">
+          <div class="card-face card-back"></div>
+          <div class="card-face card-front">
+            <div class="card-inner">
+              <div class="header">
+                <span class="badge">牌庫預覽</span>
+                <span class="icon">✨</span>
+              </div>
+              <div class="content">
+                <div class="title">一次抽五張</div>
+                <div class="desc">
+                  點擊右側牌庫後，會一次抽出五張任務卡加入手牌。<br><br>
+                  點擊下方任一手牌，可以飛到中央展示。<br><br>
+                  再點一次中央卡片即可消失。
+                </div>
+                <div class="effect"><b>提示：</b>此版本已移除分類切換按鈕。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="focus-dim" id="focusDim"></div>
+    <div class="center-layer" id="centerLayer"></div>
+    <div class="hand-zone" id="handZone"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    if(params.get("mode") === "obs") document.body.classList.add("obs-mode");
+
+    const allCards = [
+      { title:"中二病發作", desc:"用最中二的語氣自我介紹 30 秒。", effect:"", icon:"🦇", category:"普通任務卡", type:"normal" },
+      { title:"殭屍語言", desc:"用殭屍的語氣說話 1 分鐘。", effect:"", icon:"🧟", category:"普通任務卡", type:"normal" },
+      { title:"客服您好", desc:"用客服語氣向屋主推銷自己 30 秒。", effect:"", icon:"🎧", category:"普通任務卡", type:"normal" },
+      { title:"新聞快報", desc:"用主播口吻播報「本台收到糖果」的重大消息。", effect:"", icon:"📰", category:"普通任務卡", type:"normal" },
+      { title:"表情符號自介", desc:"只能用三個表情符號介紹自己，再讓屋主猜意思。", effect:"", icon:"✨", category:"普通任務卡", type:"normal" },
+      { title:"反派稱讚", desc:"用大魔王語氣稱讚屋主三次。", effect:"", icon:"😈", category:"普通任務卡", type:"normal" },
+      { title:"糖果廣告", desc:"在 30 秒內替一顆不存在的糖果做廣告。", effect:"", icon:"🍬", category:"普通任務卡", type:"normal" },
+      { title:"禁止正常說話", desc:"接下來三句話都必須用唱歌或朗誦方式說出。", effect:"", icon:"🎤", category:"普通任務卡", type:"normal" },
+      { title:"奇怪自我介紹", desc:"把自己的名字、種族或設定介紹得像商品說明書。", effect:"", icon:"📦", category:"普通任務卡", type:"normal" },
+      { title:"冷笑話時間", desc:"講一個冷笑話，屋主必須用最認真的語氣回應。", effect:"", icon:"🧊", category:"普通任務卡", type:"normal" },
+
+      { title:"名字改造計畫", desc:"讓屋主替你取一個搞笑稱號，並在該站結束前使用它自稱。", effect:"", icon:"🏷️", category:"進階搗蛋卡", type:"advanced" },
+      { title:"口頭禪感染", desc:"模仿屋主的一句口頭禪三次。", effect:"", icon:"🗣️", category:"進階搗蛋卡", type:"advanced" },
+      { title:"三十秒辯論", desc:"替一個荒謬主題辯護 30 秒，例如「南瓜其實是最強的水果」。", effect:"", icon:"🎃", category:"進階搗蛋卡", type:"advanced" },
+      { title:"萬聖節告白（非戀愛版）", desc:"用最隆重的語氣向糖果或南瓜表達感謝。", effect:"", icon:"💌", category:"進階搗蛋卡", type:"advanced" },
+      { title:"魔王宣言", desc:"用反派語氣宣布自己即將收集全世界的糖果。", effect:"", icon:"👑", category:"進階搗蛋卡", type:"advanced" },
+      { title:"語速挑戰", desc:"用播音員語速唸出三次「不給糖就搗蛋」。", effect:"", icon:"⚡", category:"進階搗蛋卡", type:"advanced" },
+      { title:"禁止說某字", desc:"由屋主指定一個常用字，串門者在接下來 30 秒內盡量避免使用。", effect:"", icon:"🚫", category:"進階搗蛋卡", type:"advanced" },
+      { title:"奇怪商品代言", desc:"替屋主的糖果屋代言 30 秒，但不能使用「好吃、可愛、漂亮」三個詞。", effect:"", icon:"📣", category:"進階搗蛋卡", type:"advanced" },
+      { title:"假裝得獎", desc:"假裝自己剛獲得「年度最會討糖獎」，發表 30 秒得獎感言。", effect:"", icon:"🏆", category:"進階搗蛋卡", type:"advanced" },
+      { title:"配音大師", desc:"用三種不同聲線說出同一句「請把糖果交出來」。", effect:"", icon:"🎭", category:"進階搗蛋卡", type:"advanced" },
+
+      { title:"關鍵字陷阱", desc:"在自然對話中讓屋主說出指定關鍵字，但不能直接要求對方說。", effect:"", icon:"🕸️", category:"隱藏任務卡", type:"hidden" },
+      { title:"稱讚反轉", desc:"讓屋主在不知情的情況下稱讚你的某個能力。", effect:"", icon:"🌟", category:"隱藏任務卡", type:"hidden" },
+      { title:"秘密口頭禪", desc:"接下來兩分鐘，每次說話都要自然地加入「桀桀桀」。", effect:"", icon:"👻", category:"隱藏任務卡", type:"hidden" },
+      { title:"糖果談判專家", desc:"用三句話說服屋主多給一顆虛擬糖果。", effect:"", icon:"🍭", category:"隱藏任務卡", type:"hidden" },
+      { title:"聊天室裁判", desc:"請聊天室或旁聽者投票決定你這次任務的表現稱號。", effect:"", icon:"💬", category:"隱藏任務卡", type:"hidden" },
+      { title:"神秘身份", desc:"用三個提示讓屋主猜出你扮演的萬聖節角色。", effect:"", icon:"🎭", category:"隱藏任務卡", type:"hidden" },
+      { title:"假裝很熟", desc:"用非常熟絡的語氣介紹一個完全虛構的共同回憶，並在揭曉時承認是即興創作。", effect:"", icon:"🫶", category:"隱藏任務卡", type:"hidden" },
+      { title:"糖果守門員", desc:"連續提出三個荒謬理由，說服屋主你值得獲得糖果。", effect:"", icon:"🛡️", category:"隱藏任務卡", type:"hidden" },
+
+      { title:"反向搗蛋", desc:"屋主與串門者交換角色，由屋主完成一個簡單搞笑任務。", effect:"", icon:"🔄", category:"屋主反擊卡", type:"host" },
+      { title:"指定語氣", desc:"屋主指定一種安全、容易完成的語氣，串門者用該語氣說一句祝福。", effect:"", icon:"🎙️", category:"屋主反擊卡", type:"host" },
+      { title:"糖果稅", desc:"串門者必須用一句話解釋為什麼自己值得拿糖，屋主再決定給糖或抽任務。", effect:"", icon:"🍬", category:"屋主反擊卡", type:"host" },
+      { title:"最爛推銷員", desc:"串門者用 20 秒推銷一個毫無用處的商品。", effect:"", icon:"🛍️", category:"屋主反擊卡", type:"host" },
+      { title:"魔法咒語", desc:"串門者自創一句咒語，屋主必須替它取名。", effect:"", icon:"🔮", category:"屋主反擊卡", type:"host" },
+      { title:"萬聖節判決", desc:"屋主替串門者頒發一個無傷大雅的稱號，例如「糖果迷路王」。", effect:"", icon:"⚖️", category:"屋主反擊卡", type:"host" }
+    ];
+
+    const centerLayer = document.getElementById("centerLayer");
+    const handZone = document.getElementById("handZone");
+    const countList = document.getElementById("countList");
+    const historyList = document.getElementById("historyList");
+    const toast = document.getElementById("toast");
+    const focusDim = document.getElementById("focusDim");
+    const deckZone = document.getElementById("deckZone");
+
+    let deck = [];
+    let handCards = [];
+    let drawBusy = false;
+    let activeCardEl = null;
+    let history = [];
+
+    function shuffle(arr){
+      const a = [...arr];
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+      }
+      return a;
+    }
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.remove("show");
+      void toast.offsetWidth;
+      toast.classList.add("show");
+    }
+
+    function renderCounts(){
+      const normal = deck.filter(c=>c.type==="normal").length;
+      const advanced = deck.filter(c=>c.type==="advanced").length;
+      const hidden = deck.filter(c=>c.type==="hidden").length;
+      const host = deck.filter(c=>c.type==="host").length;
+
+      countList.innerHTML = `
+        <div class="count-row"><span>普通任務卡</span><span>${normal}</span></div>
+        <div class="count-row"><span>進階搗蛋卡</span><span>${advanced}</span></div>
+        <div class="count-row"><span>隱藏任務卡</span><span>${hidden}</span></div>
+        <div class="count-row"><span>屋主反擊卡</span><span>${host}</span></div>
+      `;
+    }
+
+    function renderHistory(){
+      historyList.innerHTML = "";
+      if(history.length === 0){
+        historyList.innerHTML = `<div class="history-item">尚未抽卡</div>`;
+        return;
+      }
+      history.slice().reverse().forEach(item=>{
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `<b>${item.category}</b><br>${item.title}`;
+        historyList.appendChild(div);
+      });
+    }
+
+    function getCategoryClass(card){
+      if(card.category.includes("普通")) return "cat-normal";
+      if(card.category.includes("進階")) return "cat-advanced";
+      if(card.category.includes("隱藏")) return "cat-hidden";
+      return "cat-host";
+    }
+
+    function makeStars(){
+      const wrap = document.createElement("div");
+      wrap.className = "stars";
+      const chars = ["✦","✧","★","♡"];
+      for(let i=0;i<8;i++){
+        const s = document.createElement("span");
+        s.textContent = chars[Math.floor(Math.random()*chars.length)];
+        s.style.left = Math.random()*100 + "%";
+        s.style.top = Math.random()*100 + "%";
+        s.style.fontSize = (11 + Math.random()*7) + "px";
+        s.style.animationDelay = (Math.random()*2.4) + "s";
+        wrap.appendChild(s);
+      }
+      return wrap;
+    }
+
+    function createCardWrap(card, isHand=false, customClass=""){
+  const wrap = document.createElement("div");
+  wrap.className = `${isHand ? "hand-card" : "card-wrap"} ${getCategoryClass(card)} ${customClass}`.trim();
+
+  wrap.innerHTML = `
+    <div class="flip-inner">
+      <div class="card-face card-back"></div>
+      <div class="card-face card-front">
+        <div class="card-inner">
+          <div class="header">
+            <span class="badge">${card.category}</span>
+            <span class="icon">${card.icon}</span>
+          </div>
+          <div class="content">
+            <div class="title">${card.title}</div>
+            <div class="desc">${card.desc}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  wrap.querySelector(".card-front").appendChild(makeStars());
+
+  if(isHand) wrap.classList.add("flipped");
+  return wrap;
+}
+
+    function starBurst(target, count=14){
+      const rect = target.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      for(let i=0;i<count;i++){
+        const wrap = document.createElement("div");
+        wrap.className = "star-burst";
+        wrap.style.left = centerX + "px";
+        wrap.style.top = centerY + "px";
+
+        const star = document.createElement("span");
+        star.textContent = Math.random() > 0.5 ? "✦" : "★";
+        star.style.setProperty("--dx", `${(Math.random()-0.5)*170}px`);
+        star.style.setProperty("--dy", `${(Math.random()-0.5)*140}px`);
+        star.style.animationDelay = `${Math.random()*80}ms`;
+
+        wrap.appendChild(star);
+        document.body.appendChild(wrap);
+        setTimeout(()=>wrap.remove(), 700);
+      }
+    }
+
+    function renderHand(){
+      handZone.innerHTML = "";
+      const total = handCards.length;
+
+      handCards.forEach((card, index)=>{
+        const el = createCardWrap(card, true);
+        const spread = total > 1 ? (index - (total - 1) / 2) : 0;
+        const rotate = spread * 6;
+        const lift = Math.abs(spread) * 4;
+        el.style.transform = `translateY(${lift}px) rotate(${rotate}deg)`;
+        el.style.zIndex = 100 + index;
+        el.addEventListener("click", ()=>useHandCard(index));
+        handZone.appendChild(el);
+      });
+    }
+
+    async function drawFiveCards(){
+      if(drawBusy || activeCardEl) return;
+      if(deck.length === 0){
+        showToast("牌庫已空，請重置牌庫");
+        return;
+      }
+
+      drawBusy = true;
+      focusDim.classList.add("show");
+
+      const drawCount = Math.min(5, deck.length);
+      const drawn = [];
+
+      for(let i=0;i<drawCount;i++){
+        const card = deck.pop();
+        drawn.push(card);
+        history.push({ category: card.category, title: card.title });
+      }
+
+      renderCounts();
+      renderHistory();
+
+      const els = [];
+      const rotations = [-18,-9,0,9,18];
+
+      drawn.forEach((card, i)=>{
+        const el = createCardWrap(card, false, "multi-burst-card");
+        el.style.setProperty("--rot", rotations[i] + "deg");
+        centerLayer.appendChild(el);
+        els.push(el);
+      });
+
+      await new Promise(r=>requestAnimationFrame(r));
+      els.forEach(el=>el.classList.add("fly"));
+
+      setTimeout(()=>{
+        els.forEach(el=>el.classList.add("flipped"));
+      }, 520);
+
+      setTimeout(()=>{
+        requestAnimationFrame(()=>{
+          els.forEach(el=>el.classList.add("to-hand"));
+        });
+      }, 1200);
+
+      setTimeout(()=>{
+        els.forEach(el=>{
+          if(el.parentNode) el.remove();
+        });
+        handCards.push(...drawn);
+        renderHand();
+        focusDim.classList.remove("show");
+        drawBusy = false;
+      }, 1800);
+    }
+
+    function useHandCard(index){
+      if(drawBusy || activeCardEl || handCards.length === 0) return;
+
+      const card = handCards[index];
+      handCards.splice(index, 1);
+      renderHand();
+
+      drawBusy = true;
+      focusDim.classList.add("show");
+
+      const active = createCardWrap(card, false, "active-card");
+      active.classList.add("flipped");
+      centerLayer.appendChild(active);
+      activeCardEl = active;
+
+      requestAnimationFrame(()=>{
+        active.classList.add("launch");
+      });
+
+      setTimeout(()=>{
+        starBurst(active, 16);
+      }, 420);
+
+      setTimeout(()=>{
+        active.classList.remove("launch");
+        active.classList.add("displaying");
+        drawBusy = false;
+      }, 780);
+
+      const closeActive = () => {
+        if(active.dataset.closing === "1") return;
+        active.dataset.closing = "1";
+        active.classList.add("fade-out");
+
+        setTimeout(()=>{
+          if(active.parentNode) active.remove();
+          if(activeCardEl === active) activeCardEl = null;
+          drawBusy = false;
+          focusDim.classList.remove("show");
+        }, 420);
+      };
+
+      active.addEventListener("click", ()=>{
+        if(!active.classList.contains("displaying")) return;
+        closeActive();
+      });
+    }
+
+    function clearHand(){
+      if(drawBusy || activeCardEl) return;
+      handCards = [];
+      renderHand();
+      showToast("已清空手牌");
+    }
+
+    function initAll(){
+      deck = shuffle([...allCards]);
+      handCards = [];
+      history = [];
+      drawBusy = false;
+      activeCardEl = null;
+      centerLayer.innerHTML = "";
+      renderHand();
+      renderCounts();
+      renderHistory();
+      focusDim.classList.remove("show");
+      showToast("已重置牌庫");
+    }
+
+    deckZone.addEventListener("click", ()=>{
+      drawFiveCards();
+    });
+
+    document.getElementById("clearHandBtn").addEventListener("click", clearHand);
+    document.getElementById("resetAllBtn").addEventListener("click", initAll);
+
+    document.addEventListener("keydown", (e)=>{
+      const key = e.key.toLowerCase();
+      if(key === " "){
+        e.preventDefault();
+        if(!drawBusy && !activeCardEl) drawFiveCards();
+      }
+      if(key === "c" && !drawBusy && !activeCardEl) clearHand();
+      if(key === "r") initAll();
+    });
+
+    initAll();
+  </script>
+</body>
+</html>
