@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>萬聖節任務抽卡 v4 Final</title>
+  <title>萬聖節任務抽卡 v6 雙牌庫＋計分</title>
   <style>
     :root{
       --card-w: 260px;
@@ -385,8 +385,53 @@
 
     .cat-normal .badge{ background:linear-gradient(135deg,#ff7cab,#ffa5c8); }
     .cat-advanced .badge{ background:linear-gradient(135deg,#7860ff,#ab98ff); }
-    .cat-hidden .badge{ background:linear-gradient(135deg,#48ccb0,#8cf0e1); }
-    .cat-host .badge{ background:linear-gradient(135deg,#ffbd48,#ff9253); }
+    .cat-boss .badge{ background:linear-gradient(135deg,#e2324b,#ff7a59); }
+    .cat-curse .badge{ background:linear-gradient(135deg,#2f9e84,#62d6b8); }
+    .cat-fate .badge{ background:linear-gradient(135deg,#e8a21a,#ffd36b); }
+
+    .reward{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:18px;
+      font-weight:900;
+      text-align:center;
+      letter-spacing:.5px;
+      color:#5a3b00;
+      background:linear-gradient(135deg,#fff3c9,#ffe08f);
+      border:1px solid rgba(160,110,0,.18);
+    }
+    .reward.pumpkin{
+      color:#6b2a00;
+      background:linear-gradient(135deg,#ffe2c4,#ffb36b);
+      border-color:rgba(170,80,0,.2);
+    }
+    .hand-card .reward{ font-size:11px; padding:5px 6px; margin-top:6px; border-radius:10px; }
+
+    .deck-name{
+      position:absolute;
+      top:-46px;
+      width:100%;
+      text-align:center;
+      font-size:20px;
+      font-weight:900;
+      letter-spacing:2px;
+      color:#fff;
+      text-shadow:0 4px 12px rgba(0,0,0,.4);
+    }
+
+    body.deck-trick .deck-back,
+    body.deck-trick .card-back{
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04)),
+        linear-gradient(145deg, #ff8a2b, #b0306e, #5b2a9e, #2b1d4f);
+    }
+    body.deck-house .deck-back,
+    body.deck-house .card-back{
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.16), rgba(255,255,255,.04)),
+        linear-gradient(145deg, #ff78b0, #8967ff, #48ccb0, #ffbd48);
+    }
 
     .card-inner{
       position:absolute;
@@ -716,6 +761,50 @@
       100%{ opacity:0; transform:translateX(-50%) translateY(-6px); }
     }
 
+
+    .score-panel{
+      position:absolute;
+      left:24px;
+      top:18px;
+      z-index:40;
+      width:255px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 14px;
+      border-radius:20px;
+      background:var(--panel-bg);
+      border:1px solid var(--panel-line);
+      backdrop-filter:blur(12px);
+      box-shadow:0 12px 28px rgba(0,0,0,.24);
+    }
+    .score-icon{ font-size:40px; line-height:1; filter:drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .score-main{ flex:1; min-width:0; }
+    .score-label{ font-size:13px; font-weight:900; opacity:.85; letter-spacing:1px; }
+    .score-value{
+      font-size:42px; font-weight:900; line-height:1.05;
+      color:#ffe08f; text-shadow:0 0 14px rgba(255,210,110,.45);
+      display:inline-block;
+    }
+    body.deck-house .score-value{ color:#ffb36b; text-shadow:0 0 14px rgba(255,150,60,.5); }
+    .score-value.pop{ animation:scorePop .45s ease; }
+    .score-value.drop{ animation:scoreDrop .45s ease; }
+    @keyframes scorePop{ 0%{transform:scale(1)} 40%{transform:scale(1.35)} 100%{transform:scale(1)} }
+    @keyframes scoreDrop{ 0%{transform:translateY(0)} 30%{transform:translateY(5px); opacity:.6} 100%{transform:translateY(0); opacity:1} }
+    .score-btns{ display:grid; grid-template-columns:repeat(2, 34px); gap:6px; }
+    .score-btn{
+      appearance:none; border:1px solid var(--btn-line); cursor:pointer;
+      width:34px; height:28px; border-radius:10px;
+      color:#fff; font-weight:900; font-size:13px;
+      background:linear-gradient(135deg,rgba(255,255,255,.20),rgba(255,255,255,.08));
+    }
+    .score-btn:hover{ filter:brightness(1.2); }
+    .score-btn.reset{ grid-column:span 2; width:auto; font-size:11px; opacity:.75; }
+    .score-btn.reset.armed{ background:#c23a4e; opacity:1; }
+    body.obs-mode .score-btns{ opacity:.0; transition:opacity .2s; }
+    body.obs-mode .score-panel:hover .score-btns{ opacity:1; }
+    .left-panel{ top:150px !important; }
+
     @media (max-width: 1280px){
       :root{
         --preview-w: 290px;
@@ -736,8 +825,24 @@
     <div class="orb d"></div>
 
     <div class="topbar">
+      <button class="btn" id="switchDeckBtn">切換牌庫</button>
       <button class="btn" id="clearHandBtn">清空手牌</button>
       <button class="btn" id="resetAllBtn">重置牌庫</button>
+    </div>
+
+    <div class="score-panel" id="scorePanel">
+      <div class="score-icon" id="scoreIcon">🎃</div>
+      <div class="score-main">
+        <div class="score-label" id="scoreLabel">我的南瓜燈</div>
+        <div class="score-value" id="scoreValue">0</div>
+      </div>
+      <div class="score-btns">
+        <button class="score-btn" data-delta="1">+1</button>
+        <button class="score-btn" data-delta="-1">−1</button>
+        <button class="score-btn" data-delta="2">+2</button>
+        <button class="score-btn" data-delta="3">+3</button>
+        <button class="score-btn reset" id="scoreResetBtn">歸零</button>
+      </div>
     </div>
 
     <div class="left-panel">
@@ -753,6 +858,7 @@
 
     <div class="deck-zone" id="deckZone">
       <div class="deck-stack">
+        <div class="deck-name" id="deckName"></div>
         <div class="deck-back deck-l1"></div>
         <div class="deck-back deck-l2"></div>
         <div class="deck-back deck-main">DRAW<br>5</div>
@@ -769,13 +875,12 @@
                 <span class="icon">✨</span>
               </div>
               <div class="content">
-                <div class="title">一次抽五張</div>
+                <div class="title" id="previewTitle">一次抽五張</div>
                 <div class="desc">
-                  點擊右側牌庫後，會一次抽出五張任務卡加入手牌。<br><br>
-                  點擊下方任一手牌，可以飛到中央展示。<br><br>
-                  再點一次中央卡片即可消失。
+                  點擊右側牌庫，一次抽出五張卡加入手牌。<br><br>
+                  對方喊 1–5 號後，點那張手牌飛到中央；再點一次中央卡片即可消失。
                 </div>
-                <div class="effect"><b>提示：</b>此版本已移除分類切換按鈕。</div>
+                <div class="effect" id="previewEffect"></div>
               </div>
             </div>
           </div>
@@ -793,45 +898,88 @@
     const params = new URLSearchParams(location.search);
     if(params.get("mode") === "obs") document.body.classList.add("obs-mode");
 
-    const allCards = [
-      { title:"中二病發作", desc:"用最中二的語氣自我介紹 30 秒。", effect:"", icon:"🦇", category:"普通任務卡", type:"normal" },
-      { title:"殭屍語言", desc:"用殭屍的語氣說話 1 分鐘。", effect:"", icon:"🧟", category:"普通任務卡", type:"normal" },
-      { title:"客服您好", desc:"用客服語氣向屋主推銷自己 30 秒。", effect:"", icon:"🎧", category:"普通任務卡", type:"normal" },
-      { title:"新聞快報", desc:"用主播口吻播報「本台收到糖果」的重大消息。", effect:"", icon:"📰", category:"普通任務卡", type:"normal" },
-      { title:"表情符號自介", desc:"只能用三個表情符號介紹自己，再讓屋主猜意思。", effect:"", icon:"✨", category:"普通任務卡", type:"normal" },
-      { title:"反派稱讚", desc:"用大魔王語氣稱讚屋主三次。", effect:"", icon:"😈", category:"普通任務卡", type:"normal" },
-      { title:"糖果廣告", desc:"在 30 秒內替一顆不存在的糖果做廣告。", effect:"", icon:"🍬", category:"普通任務卡", type:"normal" },
-      { title:"禁止正常說話", desc:"接下來三句話都必須用唱歌或朗誦方式說出。", effect:"", icon:"🎤", category:"普通任務卡", type:"normal" },
-      { title:"奇怪自我介紹", desc:"把自己的名字、種族或設定介紹得像商品說明書。", effect:"", icon:"📦", category:"普通任務卡", type:"normal" },
-      { title:"冷笑話時間", desc:"講一個冷笑話，屋主必須用最認真的語氣回應。", effect:"", icon:"🧊", category:"普通任務卡", type:"normal" },
+    // 屋主卡：屋主抽、搗蛋鬼執行，獎勵是「糖果」給搗蛋鬼
+    // 搗蛋卡：搗蛋鬼抽、屋主執行，獎勵是「南瓜燈」給屋主
+    // reward 為數字代表 +N；為字串代表特殊效果
+    const DECKS = {
+      house: {
+        name: "屋主卡",
+        unit: "糖果",
+        unitIcon: "🍬",
+        rewardClass: "",
+        hint: "屋主抽卡、搗蛋鬼盲選並執行，搗蛋鬼拿糖果。",
+        cards: [
+          { title:"中二病發作", desc:"用最中二的語氣自我介紹 30 秒。", icon:"🦇", category:"小任務", type:"normal", reward:1 },
+          { title:"新聞快報", desc:"用主播口吻播報「本台收到糖果」的重大消息。", icon:"📰", category:"小任務", type:"normal", reward:1 },
+          { title:"反派稱讚", desc:"用大魔王語氣稱讚屋主三次。", icon:"😈", category:"小任務", type:"normal", reward:1 },
+          { title:"語速挑戰", desc:"用播音員語速唸三次「不給糖就搗蛋」。", icon:"⚡", category:"小任務", type:"normal", reward:1 },
+          { title:"冷笑話時間", desc:"講一個冷笑話，屋主要用最認真的語氣回應。", icon:"🧊", category:"小任務", type:"normal", reward:1 },
+          { title:"南瓜叫賣", desc:"用夜市叫賣語氣賣南瓜 20 秒。", icon:"🎃", category:"小任務", type:"normal", reward:1 },
+          { title:"三十秒辯論", desc:"替荒謬主題辯護 30 秒，例如「南瓜是最強的水果」。", icon:"🗯️", category:"大任務", type:"advanced", reward:2 },
+          { title:"奇怪商品代言", desc:"替屋主的糖果屋代言 30 秒，不能說「好吃、可愛、漂亮」。", icon:"📣", category:"大任務", type:"advanced", reward:2 },
+          { title:"假裝得獎", desc:"發表「年度最會討糖獎」30 秒得獎感言。", icon:"🏆", category:"大任務", type:"advanced", reward:2 },
+          { title:"殭屍語言", desc:"用殭屍語氣跟屋主聊 1 分鐘。", icon:"🧟", category:"大任務", type:"advanced", reward:2 },
+          { title:"即興廣播劇", desc:"屋主給三個詞，編一個 1 分鐘萬聖節故事。", icon:"📻", category:"大任務", type:"advanced", reward:2 },
+          { title:"怪物聲帶圖鑑", desc:"屋主出題（例如「吸血鬼打噴嚏」），模仿三種怪物聲音。", icon:"👹", category:"大任務", type:"advanced", reward:2 },
+          { title:"禁止說「糖」字", desc:"屋主陪聊 1 分鐘設陷阱，說出「糖」就失敗。", icon:"🚫", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 顆；可放棄改拿 1 顆" },
+          { title:"不准笑", desc:"屋主有 30 秒逗你笑，笑了就失敗。", icon:"😐", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 顆；可放棄改拿 1 顆" },
+          { title:"糖果談判專家", desc:"用三句話說服屋主，屋主不點頭就失敗。", icon:"🍭", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 顆；可放棄改拿 1 顆" },
+          { title:"桀桀桀詛咒", desc:"下一站每句話結尾都要加「桀桀桀」。", icon:"👻", category:"詛咒卡", type:"curse", reward:1 },
+          { title:"羞恥稱號", desc:"屋主幫你取一個稱號，下一站自我介紹必須用它。", icon:"🏷️", category:"詛咒卡", type:"curse", reward:1 },
+          { title:"唱歌敲門", desc:"下一站的開門口號要用唱的。", icon:"🎤", category:"詛咒卡", type:"curse", reward:1 },
+          { title:"糖果雨", desc:"不用做任務，直接拿三顆！", icon:"🌧️", category:"命運卡", type:"fate", reward:3 },
+          { title:"空籃子", desc:"沒有任務也沒有糖……屋主要安慰你 30 秒。", icon:"🧺", category:"命運卡", type:"fate", reward:1, note:"安慰獎" }
+        ]
+      },
+      trick: {
+        name: "搗蛋卡",
+        unit: "南瓜燈",
+        unitIcon: "🎃",
+        rewardClass: "pumpkin",
+        hint: "搗蛋鬼抽卡、屋主盲選並執行，屋主拿南瓜燈。",
+        cards: [
+          { title:"門鈴惡作劇", desc:"接下來 1 分鐘，屋主每次開口前要先學門鈴「叮咚」。", icon:"🔔", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"浮誇房仲", desc:"用最浮誇的房仲語氣推銷自己的糖果屋 30 秒。", icon:"🏠", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"一句話鬼故事", desc:"屋主用一句話講鬼故事，搗蛋鬼要裝作被嚇到。", icon:"🕯️", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"配音大師", desc:"用三種聲線說「歡迎光臨糖果屋」。", icon:"🎭", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"客訴專線", desc:"搗蛋鬼當奇怪客人客訴，屋主用客服語氣處理 30 秒。", icon:"🎧", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"唱歌迎賓", desc:"用自由曲調唱一句「不給糖就搗蛋」。", icon:"🎶", category:"小搗蛋", type:"normal", reward:1 },
+          { title:"互相宣傳", desc:"幫搗蛋鬼的台打 30 秒廣告。", icon:"📢", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"真心話問答", desc:"回答搗蛋鬼一個問題（安全範圍內）。", icon:"💬", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"口頭禪感染", desc:"模仿搗蛋鬼的口頭禪三次。", icon:"🗣️", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"禁止正常說話", desc:"接下來三句話都要用唱的或朗誦的。", icon:"🎼", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"拍賣官", desc:"用拍賣官語氣，把一顆糖果「拍賣」給搗蛋鬼 30 秒。", icon:"🔨", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"鬼屋導覽", desc:"即興導覽「鬼屋版」的自己的糖果屋 1 分鐘。", icon:"🏚️", category:"大搗蛋", type:"advanced", reward:2 },
+          { title:"不准笑", desc:"搗蛋鬼有 30 秒逗屋主笑，笑了就失敗。", icon:"😐", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 盞；可放棄改拿 1 盞" },
+          { title:"禁止說「不」", desc:"搗蛋鬼連問 30 秒，屋主說出「不」就失敗。", icon:"🙅", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 盞；可放棄改拿 1 盞" },
+          { title:"屋主求饒", desc:"用三句話說服搗蛋鬼「不要搗蛋」，搗蛋鬼不點頭就失敗。", icon:"🙏", category:"魔王卡", type:"boss", reward:3, note:"失敗 0 盞；可放棄改拿 1 盞" },
+          { title:"糖果屋改名", desc:"搗蛋鬼替糖果屋取新名字，下一位客人來時要用新名字介紹。", icon:"🪧", category:"陷阱卡", type:"curse", reward:1 },
+          { title:"殭屍屋主", desc:"下一位客人來時，要用殭屍語氣迎接。", icon:"🧟", category:"陷阱卡", type:"curse", reward:1 },
+          { title:"搗蛋鬼簽名", desc:"下一位客人來時，先說「XX 來搗蛋過了」並幫他宣傳一句。", icon:"✍️", category:"陷阱卡", type:"curse", reward:1 },
+          { title:"南瓜燈被吹熄", desc:"不用做任務，但搗蛋鬼吹熄你 1 盞南瓜燈！", icon:"💨", category:"命運卡", type:"fate", reward:"屋主 −1 盞，搗蛋鬼 +1 顆糖果" },
+          { title:"良心發現", desc:"搗蛋鬼良心發現，不用做任務！", icon:"😇", category:"命運卡", type:"fate", reward:3 }
+        ]
+      }
+    };
 
-      { title:"名字改造計畫", desc:"讓屋主替你取一個搞笑稱號，並在該站結束前使用它自稱。", effect:"", icon:"🏷️", category:"進階搗蛋卡", type:"advanced" },
-      { title:"口頭禪感染", desc:"模仿屋主的一句口頭禪三次。", effect:"", icon:"🗣️", category:"進階搗蛋卡", type:"advanced" },
-      { title:"三十秒辯論", desc:"替一個荒謬主題辯護 30 秒，例如「南瓜其實是最強的水果」。", effect:"", icon:"🎃", category:"進階搗蛋卡", type:"advanced" },
-      { title:"萬聖節告白（非戀愛版）", desc:"用最隆重的語氣向糖果或南瓜表達感謝。", effect:"", icon:"💌", category:"進階搗蛋卡", type:"advanced" },
-      { title:"魔王宣言", desc:"用反派語氣宣布自己即將收集全世界的糖果。", effect:"", icon:"👑", category:"進階搗蛋卡", type:"advanced" },
-      { title:"語速挑戰", desc:"用播音員語速唸出三次「不給糖就搗蛋」。", effect:"", icon:"⚡", category:"進階搗蛋卡", type:"advanced" },
-      { title:"禁止說某字", desc:"由屋主指定一個常用字，串門者在接下來 30 秒內盡量避免使用。", effect:"", icon:"🚫", category:"進階搗蛋卡", type:"advanced" },
-      { title:"奇怪商品代言", desc:"替屋主的糖果屋代言 30 秒，但不能使用「好吃、可愛、漂亮」三個詞。", effect:"", icon:"📣", category:"進階搗蛋卡", type:"advanced" },
-      { title:"假裝得獎", desc:"假裝自己剛獲得「年度最會討糖獎」，發表 30 秒得獎感言。", effect:"", icon:"🏆", category:"進階搗蛋卡", type:"advanced" },
-      { title:"配音大師", desc:"用三種不同聲線說出同一句「請把糖果交出來」。", effect:"", icon:"🎭", category:"進階搗蛋卡", type:"advanced" },
+    let currentDeckKey = params.get("deck") === "trick" ? "trick" : "house";
+    function currentDeck(){ return DECKS[currentDeckKey]; }
 
-      { title:"關鍵字陷阱", desc:"在自然對話中讓屋主說出指定關鍵字，但不能直接要求對方說。", effect:"", icon:"🕸️", category:"隱藏任務卡", type:"hidden" },
-      { title:"稱讚反轉", desc:"讓屋主在不知情的情況下稱讚你的某個能力。", effect:"", icon:"🌟", category:"隱藏任務卡", type:"hidden" },
-      { title:"秘密口頭禪", desc:"接下來兩分鐘，每次說話都要自然地加入「桀桀桀」。", effect:"", icon:"👻", category:"隱藏任務卡", type:"hidden" },
-      { title:"糖果談判專家", desc:"用三句話說服屋主多給一顆虛擬糖果。", effect:"", icon:"🍭", category:"隱藏任務卡", type:"hidden" },
-      { title:"聊天室裁判", desc:"請聊天室或旁聽者投票決定你這次任務的表現稱號。", effect:"", icon:"💬", category:"隱藏任務卡", type:"hidden" },
-      { title:"神秘身份", desc:"用三個提示讓屋主猜出你扮演的萬聖節角色。", effect:"", icon:"🎭", category:"隱藏任務卡", type:"hidden" },
-      { title:"假裝很熟", desc:"用非常熟絡的語氣介紹一個完全虛構的共同回憶，並在揭曉時承認是即興創作。", effect:"", icon:"🫶", category:"隱藏任務卡", type:"hidden" },
-      { title:"糖果守門員", desc:"連續提出三個荒謬理由，說服屋主你值得獲得糖果。", effect:"", icon:"🛡️", category:"隱藏任務卡", type:"hidden" },
+    function rewardText(card){
+      const d = currentDeck();
+      if(typeof card.reward === "number") return `${d.unitIcon} +${card.reward} ${d.unit}`;
+      return card.reward;
+    }
 
-      { title:"反向搗蛋", desc:"屋主與串門者交換角色，由屋主完成一個簡單搞笑任務。", effect:"", icon:"🔄", category:"屋主反擊卡", type:"host" },
-      { title:"指定語氣", desc:"屋主指定一種安全、容易完成的語氣，串門者用該語氣說一句祝福。", effect:"", icon:"🎙️", category:"屋主反擊卡", type:"host" },
-      { title:"糖果稅", desc:"串門者必須用一句話解釋為什麼自己值得拿糖，屋主再決定給糖或抽任務。", effect:"", icon:"🍬", category:"屋主反擊卡", type:"host" },
-      { title:"最爛推銷員", desc:"串門者用 20 秒推銷一個毫無用處的商品。", effect:"", icon:"🛍️", category:"屋主反擊卡", type:"host" },
-      { title:"魔法咒語", desc:"串門者自創一句咒語，屋主必須替它取名。", effect:"", icon:"🔮", category:"屋主反擊卡", type:"host" },
-      { title:"萬聖節判決", desc:"屋主替串門者頒發一個無傷大雅的稱號，例如「糖果迷路王」。", effect:"", icon:"⚖️", category:"屋主反擊卡", type:"host" }
-    ];
+    function applyDeckTheme(){
+      const d = currentDeck();
+      document.body.classList.remove("deck-house","deck-trick");
+      document.body.classList.add("deck-" + currentDeckKey);
+      document.getElementById("deckName").textContent = d.name;
+      document.getElementById("previewTitle").textContent = d.name;
+      document.getElementById("previewEffect").textContent = d.hint;
+      document.title = `萬聖節任務抽卡｜${d.name}`;
+    }
 
     const centerLayer = document.getElementById("centerLayer");
     const handZone = document.getElementById("handZone");
@@ -864,17 +1012,12 @@
     }
 
     function renderCounts(){
-      const normal = deck.filter(c=>c.type==="normal").length;
-      const advanced = deck.filter(c=>c.type==="advanced").length;
-      const hidden = deck.filter(c=>c.type==="hidden").length;
-      const host = deck.filter(c=>c.type==="host").length;
-
-      countList.innerHTML = `
-        <div class="count-row"><span>普通任務卡</span><span>${normal}</span></div>
-        <div class="count-row"><span>進階搗蛋卡</span><span>${advanced}</span></div>
-        <div class="count-row"><span>隱藏任務卡</span><span>${hidden}</span></div>
-        <div class="count-row"><span>屋主反擊卡</span><span>${host}</span></div>
-      `;
+      const order = [];
+      currentDeck().cards.forEach(c=>{ if(!order.includes(c.category)) order.push(c.category); });
+      countList.innerHTML = order.map(cat=>{
+        const n = deck.filter(c=>c.category===cat).length;
+        return `<div class="count-row"><span>${cat}</span><span>${n}</span></div>`;
+      }).join("");
     }
 
     function renderHistory(){
@@ -892,10 +1035,7 @@
     }
 
     function getCategoryClass(card){
-      if(card.category.includes("普通")) return "cat-normal";
-      if(card.category.includes("進階")) return "cat-advanced";
-      if(card.category.includes("隱藏")) return "cat-hidden";
-      return "cat-host";
+      return "cat-" + card.type;
     }
 
     function makeStars(){
@@ -930,6 +1070,8 @@
           <div class="content">
             <div class="title">${card.title}</div>
             <div class="desc">${card.desc}</div>
+            <div class="reward ${currentDeck().rewardClass}">${rewardText(card)}</div>
+            ${card.note ? `<div class="effect">${card.note}</div>` : ""}
           </div>
         </div>
       </div>
@@ -1092,7 +1234,7 @@
     }
 
     function initAll(){
-      deck = shuffle([...allCards]);
+      deck = shuffle([...currentDeck().cards]);
       handCards = [];
       history = [];
       drawBusy = false;
@@ -1112,7 +1254,80 @@
     document.getElementById("clearHandBtn").addEventListener("click", clearHand);
     document.getElementById("resetAllBtn").addEventListener("click", initAll);
 
+    function switchDeck(){
+      if(drawBusy || activeCardEl) return;
+      currentDeckKey = currentDeckKey === "house" ? "trick" : "house";
+      const url = new URL(location.href);
+      url.searchParams.set("deck", currentDeckKey);
+      window.history.replaceState(null, "", url);
+      applyDeckTheme();
+      initAll();
+      refreshScoreForDeck();
+      showToast(`已切換為${currentDeck().name}`);
+    }
+    document.getElementById("switchDeckBtn").addEventListener("click", switchDeck);
+
+
+    // ===== 計分：屋主頁（屋主卡）記南瓜燈；搗蛋鬼頁（搗蛋卡）記糖果 =====
+    const SCORE_INFO = {
+      house: { key:"halloween-score-pumpkin", icon:"🎃", label:"我的南瓜燈" },
+      trick: { key:"halloween-score-candy",  icon:"🍬", label:"我的糖果" }
+    };
+    const scoreValueEl = document.getElementById("scoreValue");
+    function loadScore(){
+      try{ return parseInt(localStorage.getItem(SCORE_INFO[currentDeckKey].key) || "0", 10) || 0; }
+      catch(e){ return scoreMem[currentDeckKey] || 0; }
+    }
+    const scoreMem = { house:0, trick:0 };
+    let score = 0;
+    function saveScore(){
+      scoreMem[currentDeckKey] = score;
+      try{ localStorage.setItem(SCORE_INFO[currentDeckKey].key, String(score)); }catch(e){}
+    }
+    function renderScore(anim){
+      const info = SCORE_INFO[currentDeckKey];
+      document.getElementById("scoreIcon").textContent = info.icon;
+      document.getElementById("scoreLabel").textContent = info.label;
+      scoreValueEl.textContent = score;
+      if(anim){
+        scoreValueEl.classList.remove("pop","drop");
+        void scoreValueEl.offsetWidth;
+        scoreValueEl.classList.add(anim);
+      }
+    }
+    function changeScore(delta){
+      score = Math.max(0, score + delta);
+      saveScore();
+      renderScore(delta > 0 ? "pop" : "drop");
+      if(delta > 0) starBurst(scoreValueEl, 8);
+    }
+    function refreshScoreForDeck(){
+      score = loadScore();
+      renderScore();
+    }
+    document.querySelectorAll(".score-btn[data-delta]").forEach(btn=>{
+      btn.addEventListener("click", ()=>changeScore(parseInt(btn.dataset.delta,10)));
+    });
+    const resetBtn = document.getElementById("scoreResetBtn");
+    let resetTimer = null;
+    resetBtn.addEventListener("click", ()=>{
+      // 點兩下才歸零，避免誤觸
+      if(resetBtn.classList.contains("armed")){
+        clearTimeout(resetTimer);
+        resetBtn.classList.remove("armed");
+        resetBtn.textContent = "歸零";
+        score = 0; saveScore(); renderScore("drop");
+        showToast("分數已歸零");
+      }else{
+        resetBtn.classList.add("armed");
+        resetBtn.textContent = "再點一次歸零";
+        resetTimer = setTimeout(()=>{ resetBtn.classList.remove("armed"); resetBtn.textContent = "歸零"; }, 2500);
+      }
+    });
+
     document.addEventListener("keydown", (e)=>{
+      if(["=","+","ArrowUp"].includes(e.key)){ e.preventDefault(); changeScore(1); return; }
+      if(["-","_","ArrowDown"].includes(e.key)){ e.preventDefault(); changeScore(-1); return; }
       const key = e.key.toLowerCase();
       if(key === " "){
         e.preventDefault();
@@ -1122,7 +1337,9 @@
       if(key === "r") initAll();
     });
 
+    applyDeckTheme();
     initAll();
+    refreshScoreForDeck();
   </script>
 </body>
 </html>
