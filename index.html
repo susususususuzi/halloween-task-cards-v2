@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>萬聖節任務抽卡 v8 七張手牌＋放回抽</title>
+  <title>萬聖節任務抽卡 v9 背景時鐘</title>
   <style>
     :root{
       --card-w: 260px;
@@ -833,6 +833,20 @@
     .redeem-cost{ font-size:20px; font-weight:900; color:#b0306e; }
     .redeem-hint{ font-size:12px; opacity:.6; margin-top:10px; }
 
+
+    .bg-clock{
+      position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      z-index:1; pointer-events:none; user-select:none; white-space:nowrap;
+      font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+      font-size:min(12.5vw, 28vh); font-weight:900; letter-spacing:.02em;
+      font-variant-numeric:tabular-nums; line-height:1;
+      color:rgba(255,255,255,.07);
+      text-shadow:0 0 40px rgba(255,255,255,.04);
+    }
+    .bg-clock .sec{ font-size:.42em; margin-left:.12em; vertical-align:.95em; }
+    body.obs-mode .bg-clock{ color:rgba(255,255,255,.10); }
+    body.no-clock .bg-clock{ display:none; }
+
     @media (max-width: 1280px){
       :root{
         --preview-w: 290px;
@@ -851,6 +865,7 @@
     <div class="orb b"></div>
     <div class="orb c"></div>
     <div class="orb d"></div>
+    <div class="bg-clock" id="bgClock"></div>
 
     <div class="topbar">
       <button class="btn" id="switchDeckBtn">切換牌庫</button>
@@ -1449,6 +1464,18 @@
         setTimeout(()=>{ card.remove(); if(!activeCardEl) focusDim.classList.remove("show"); }, 320);
       });
     }
+
+
+    // ===== 背景時鐘 =====
+    if(params.get("clock") === "0") document.body.classList.add("no-clock");
+    const bgClock = document.getElementById("bgClock");
+    function tickClock(){
+      const d = new Date();
+      const p2 = n => String(n).padStart(2,"0");
+      bgClock.textContent = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
 
     document.addEventListener("keydown", (e)=>{
       if(["=","+","ArrowUp"].includes(e.key)){ e.preventDefault(); changeScore(1); return; }
